@@ -13,6 +13,10 @@ const cron = require("node-cron");
 const {
   fetchedAndSaveInstrumentInDatabase,
 } = require("./services/marketFeed.service");
+const { connectRedis } = require("./services/redis.service");
+
+// Connecting redis
+connectRedis();
 
 // Creating server
 const app = express();
@@ -108,6 +112,7 @@ server.listen(process.env.PORT, () => {
 });
 
 // Schedule cron job for 8:30 AM daily
+fetchedAndSaveInstrumentInDatabase();
 // Fetching SmartAPI Market Data Every Morning at 8:30 AM
 cron.schedule(
   "30 08 * * *",

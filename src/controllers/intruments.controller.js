@@ -1,15 +1,22 @@
 const expressAsyncHandler = require("express-async-handler");
 const instrumentModel = require("../models/instruments.model");
-const { getRecentExpiry } = require("../util/recentExpiries");
+const {client} = require("../services/redis.service")
 
 const fetchAllInstruments = expressAsyncHandler(async (req, res) => {
-  const instrumentTypes = ["OPTSTK", "OPTIDX", "OPTFUT","FUTCOM"];
+  const instrumentTypes = ["OPTSTK", "OPTIDX", "OPTFUT", "FUTCOM"];
   try {
-    const instruments = await instrumentModel.find({
-      instrumenttype: { $in: instrumentTypes },
-    }).select('symbol token exch_seg');
+    const data = await client.get("instruments");
+    if (data) {
+      return res.status(200).json({ instruments: JSON.parse(data) });
+    }
+    const instruments = await instrumentModel
+      .find({
+        instrumenttype: { $in: instrumentTypes },
+      })
+      .select("symbol token exch_seg");
     return res.status(200).json({ instruments });
   } catch (error) {
+    console.log(error)
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -43,5 +50,5 @@ const fetchInstrumentById = expressAsyncHandler(async (req, res) => {
 module.exports = {
   fetchAllInstruments,
   fetchIndicesIntruments,
-  fetchInstrumentById
+  fetchInstrumentById,
 };
