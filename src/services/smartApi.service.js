@@ -2,6 +2,8 @@ const { SmartAPI, WebSocketV2 } = require("smartapi-javascript");
 const { generateTotp } = require("../util/generateTotp");
 const SubscribeModel = require("../models/subscribe.model");
 const { Io } = require("./socket.service");
+const { client } = require("../services/redis.service");
+const exchangeMapping = require("../util/exchangeMapping");
 
 const smartApi = new SmartAPI({
   api_key: process.env.SMART_API_KEY,
@@ -71,14 +73,31 @@ io.on("connection", (socket) => {
   socket.emit("tick", Array.from(tickMap.values()));
 
   // Handle watchlist update
-  socket.on("watchlist:update", async () => {
+  // socket.on("watchlist:update", async () => {
+  //   try {
+  //     console.log("Watchlist updated → Resubscribing instruments...");
+  //     subscribeInstrument = await SubscribeModel.find();
+  //     subscribeToInstruments(ws, subscribeInstrument);
+  //     io.emit("tick", Array.from(tickMap.values())); // broadcast updated state
+  //   } catch (err) {
+  //     console.error("Error in watchlist update:", err);
+  //   }
+  // });
+
+  socket.on("instrument:view", async ({ token, exchangeType }) => {
+    console.log(token)
+    console.log(exchangeType)
     try {
-      console.log("Watchlist updated → Resubscribing instruments...");
-      subscribeInstrument = await SubscribeModel.find();
-      subscribeToInstruments(ws, subscribeInstrument);
+      await client.sAdd(
+        "subscribe_temp",
+        JSON.stringify({ token, exchangeType: exchangeMapping(exchangeType) })
+      );
+      const raw = await client.sMembers("subscribe_temp");
+      const instruments = raw.map(JSON.parse);
+      subscribeToInstruments(ws, instruments);
       io.emit("tick", Array.from(tickMap.values())); // broadcast updated state
-    } catch (err) {
-      console.error("Error in watchlist update:", err);
+    } catch (error) {
+      console.log("Socket instrument:view error", error);
     }
   });
 

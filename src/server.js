@@ -111,8 +111,9 @@ server.listen(process.env.PORT, () => {
   console.log(`Scalax Server is running on ${process.env.PORT}`);
 });
 
+// fetchedAndSaveInstrumentInDatabase();
+
 // Schedule cron job for 8:30 AM daily
-fetchedAndSaveInstrumentInDatabase();
 // Fetching SmartAPI Market Data Every Morning at 8:30 AM
 cron.schedule(
   "30 08 * * *",

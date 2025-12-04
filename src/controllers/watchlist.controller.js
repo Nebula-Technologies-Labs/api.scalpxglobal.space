@@ -3,7 +3,6 @@ const subscribeModel = require("../models/subscribe.model");
 const watchlistModel = require("../models/watchlist.model");
 const clientModel = require("../models/client.model");
 const instrumentModel = require("../models/instruments.model");
-const exchangeMapping = require("../util/exchangeMapping");
 
 const addInstrumentToClientWatchlist = expressAsyncHandler(async (req, res) => {
   try {
@@ -50,12 +49,12 @@ const addInstrumentToClientWatchlist = expressAsyncHandler(async (req, res) => {
       return res.status(200).json({ message: "Instrument added to watchlist" });
     }
 
-    const subscribe = await subscribeModel.create({
-      token: instrument.token,
-      exchangeType: exchangeMapping(instrument.exch_seg),
-    });
+    // const subscribe = await subscribeModel.create({
+    //   token: instrument.token,
+    //   exchangeType: exchangeMapping(instrument.exch_seg),
+    // });
 
-    if (!subscribe) return res.status(400).json("Bad Request");
+    // if (!subscribe) return res.status(400).json("Bad Request");
     return res.status(200).json({ message: "Instrument Added to watchlist" });
   } catch (error) {
     console.log(error);
