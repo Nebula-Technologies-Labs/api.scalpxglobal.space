@@ -6,11 +6,12 @@ const clientSchema = new mongoose.Schema(
     userName: { type: String, required: true },
     password: { type: String, required: true },
     userId: { type: String, required: true },
-    totalFunds: { type: Number, required: true },
+    availableFunds: { type: Number, required: true },
     isDemoId: { type: Boolean, default: false },
-    portfolioValue: Number,
-    margin: { type: Number, required: true },
-    brokeragePercentage: { type: Number, default: 1 },
+    portfolioValue: { type: Number },
+    futMargin: { type: Number, required: true },
+    optbrokerage: { type: Number, required: true, default: 20 },
+    futBrokerage: { type: Number, required: true, default: 500 },
     brokerId: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "brokerModelType",
@@ -23,6 +24,9 @@ const clientSchema = new mongoose.Schema(
     },
     orderId: [{ type: mongoose.Schema.Types.ObjectId, ref: "order" }],
     watchlists: [{ type: mongoose.Schema.Types.ObjectId, ref: "watchlist" }],
+    recentSearch: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "recentSearch" },
+    ],
   },
   { timestamps: true }
 );

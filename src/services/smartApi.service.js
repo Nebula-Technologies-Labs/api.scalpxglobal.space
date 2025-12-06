@@ -2,7 +2,7 @@ const { SmartAPI, WebSocketV2 } = require("smartapi-javascript");
 const { generateTotp } = require("../util/generateTotp");
 const SubscribeModel = require("../models/subscribe.model");
 const { Io } = require("./socket.service");
-const { client } = require("../services/redis.service");
+const {client} = require("./redis.service")
 const exchangeMapping = require("../util/exchangeMapping");
 
 const smartApi = new SmartAPI({
@@ -72,21 +72,7 @@ io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
   socket.emit("tick", Array.from(tickMap.values()));
 
-  // Handle watchlist update
-  // socket.on("watchlist:update", async () => {
-  //   try {
-  //     console.log("Watchlist updated → Resubscribing instruments...");
-  //     subscribeInstrument = await SubscribeModel.find();
-  //     subscribeToInstruments(ws, subscribeInstrument);
-  //     io.emit("tick", Array.from(tickMap.values())); // broadcast updated state
-  //   } catch (err) {
-  //     console.error("Error in watchlist update:", err);
-  //   }
-  // });
-
   socket.on("instrument:view", async ({ token, exchangeType }) => {
-    console.log(token)
-    console.log(exchangeType)
     try {
       await client.sAdd(
         "subscribe_temp",
@@ -107,12 +93,11 @@ io.on("connection", (socket) => {
 });
 
 // -------- Helper Function --------
-function subscribeToInstruments(ws, instruments) {
+async function subscribeToInstruments(ws, instruments) {
   if (!ws) {
     console.error("WebSocket not initialized");
     return;
   }
-
   const payloads = instruments.map((item) => ({
     correlationID: "correlation_id",
     action: 1,

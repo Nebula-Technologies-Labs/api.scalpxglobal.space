@@ -6,17 +6,9 @@ const instrumentModel = require("../models/instruments.model");
 const exchangeMapping = require("../util/exchangeMapping");
 const expressAsyncHandler = require("express-async-handler");
 
-const registerClient = expressAsyncHandler(async (req, res) => {
+const registerClientByAdmin = expressAsyncHandler(async (req, res) => {
   try {
-    const {
-      userName,
-      password,
-      userId,
-      totalFunds,
-      marginRatio,
-      brokeragePercentage,
-      isDemoId,
-    } = req.body;
+    const { userName, password, userId, isDemoId, availableFunds, futMargin } = req.body;
     const isAdmin = await AdminModel.findOne({ _id: req.user });
 
     if (!isAdmin)
@@ -26,11 +18,10 @@ const registerClient = expressAsyncHandler(async (req, res) => {
       userId,
       userName,
       password,
-      totalFunds,
-      marginRatio,
+      availableFunds,
+      futMargin,
       brokerId: isAdmin._id,
-      portfolioValue: 0,
-      brokeragePercentage,
+      brokerModelType: "admin",
       isDemoId,
     });
 
@@ -42,7 +33,7 @@ const registerClient = expressAsyncHandler(async (req, res) => {
   }
 });
 
-const registerBroker = expressAsyncHandler(async (req, res) => {
+const registerBrokerByAdmin = expressAsyncHandler(async (req, res) => {
   try {
     const { userId, brokerName, password } = req.body;
 
@@ -114,6 +105,7 @@ const subscribeInstrument = expressAsyncHandler(async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 const unSubscribeInstrument = expressAsyncHandler(async (req, res) => {
   try {
     const { instrumentId } = req.params;
@@ -150,9 +142,39 @@ const fetchSubscribedInstruments = expressAsyncHandler(async (req, res) => {
   }
 });
 
+const deleteClient = expressAsyncHandler(async (req, res) => {
+  try {
+    const admin = await AdminModel.findById(req.user);
+    if (!admin) return res.status(403).json({ message: "UnAuthorized Access" });
+
+    const { clientId } = req.params;
+    const client = await clientModel.findById(clientId);
+    if (!client)
+      return res.status(404).json({ message: "Client Not Found!!!" });
+    await clientModel.findByIdAndDelete(clientId);
+    return res.status(200).json({ message: "Client Delete Successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+const deletebroker = expressAsyncHandler(async (req, res) => {
+  try {
+    const admin = await AdminModel.findById(req.user);
+    if (!admin) return res.status(403).json({ message: "UnAuthorized Access" });
+    const { brokerId } = req.params;
+    const broker = await brokerModel.findById(brokerId);
+    if (!broker) return res.status(404).json({ mesage: "Broker Not found!!!" });
+    await brokerModel.findByIdAndDelete(brokerId);
+    return res.status(200).json({ message: "Broker Delete Successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 module.exports = {
-  registerBroker,
-  registerClient,
+  registerBrokerByAdmin,
+  registerClientByAdmin,
   fetchAllClients,
   fetchAllBrokers,
   subscribeInstrument,
@@ -161,4 +183,6 @@ module.exports = {
   fetchSubscribedInstruments,
   subscribeInstrument,
   unSubscribeInstrument,
+  deleteClient,
+  deletebroker,
 };
