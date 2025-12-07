@@ -28,7 +28,7 @@ const saveNewInstrumentsInDatabase = async (data) => {
     await InstrumentModel.insertMany(formattedInstruments);
     const instruments = await InstrumentModel.find({
       instrumenttype: { $in: instrumentTypes },
-    }).select("symbol token exch_seg");
+    }).select("symbol token exch_seg lotsize instrumenttype");
     await client.set("instruments", JSON.stringify(instruments));
     console.log(`${instruments.length} rows added in Database`);
   } catch (error) {

@@ -2,7 +2,7 @@ const { SmartAPI, WebSocketV2 } = require("smartapi-javascript");
 const { generateTotp } = require("../util/generateTotp");
 const SubscribeModel = require("../models/subscribe.model");
 const { Io } = require("./socket.service");
-const {client} = require("./redis.service")
+const { client } = require("./redis.service");
 const exchangeMapping = require("../util/exchangeMapping");
 
 const smartApi = new SmartAPI({
@@ -56,8 +56,12 @@ const connectFeed = async (session) => {
     // WebSocket Tick Listener
     ws.on("tick", (data) => {
       if (data === "pong") return;
-      tickMap.set(data.token, data);
-      io.emit("tick", Array.from(tickMap.values()));
+
+      const cleanToken = String(data.token).replace(/"/g, "").trim();
+      tickMap.set(cleanToken, { ...data, token: cleanToken });
+      // convert Map → object once
+      const obj = Object.fromEntries(tickMap);
+      io.emit("tick", obj);
     });
 
     ws.on("error", (err) => console.error("WebSocket Error:", err));
@@ -70,8 +74,8 @@ const connectFeed = async (session) => {
 // -------- Socket.IO Connection (Global Scope) --------
 io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
-  socket.emit("tick", Array.from(tickMap.values()));
-
+  const obj = Object.fromEntries(tickMap);
+  io.emit("tick", obj);
   socket.on("instrument:view", async ({ token, exchangeType }) => {
     try {
       await client.sAdd(
@@ -81,7 +85,6 @@ io.on("connection", (socket) => {
       const raw = await client.sMembers("subscribe_temp");
       const instruments = raw.map(JSON.parse);
       subscribeToInstruments(ws, instruments);
-      io.emit("tick", Array.from(tickMap.values())); // broadcast updated state
     } catch (error) {
       console.log("Socket instrument:view error", error);
     }
