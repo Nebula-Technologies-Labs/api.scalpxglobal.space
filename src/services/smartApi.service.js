@@ -1,8 +1,6 @@
 const { SmartAPI, WebSocketV2 } = require("smartapi-javascript");
 const { generateTotp } = require("../util/generateTotp");
-const SubscribeModel = require("../models/subscribe.model");
 const { Io } = require("./socket.service");
-const { client } = require("../services/redis.service");
 const exchangeMapping = require("../util/exchangeMapping");
 
 const smartApi = new SmartAPI({
@@ -12,7 +10,6 @@ const smartApi = new SmartAPI({
 const io = Io();
 let ws;
 const tickMap = new Map();
-let subscribeInstrument = [];
 
 const smartApiLogin = async () => {
   try {
@@ -51,7 +48,6 @@ const connectFeed = async (session) => {
       if (data === "pong") return;
       const token = String(data.token).replace(/"/g, "").trim();
       tickMap.set(token, { ...data, token });
-      console.log(data);
       const tickObject = Object.fromEntries(tickMap);
       io.emit("tick", tickObject);
     });
@@ -77,31 +73,12 @@ io.on("connection", (socket) => {
       };
       ws.fetchData(payload);
     } catch (error) {
-      console.log(error);
+      console.error("Exchange Mapping Error")
     }
   });
   socket.on("disconnect", () => {
     console.log("🔴 Client disconnected:", socket.id);
   });
 });
-
-// -------- Helper Function --------
-function subscribeToInstruments(ws, instruments) {
-  if (!ws) {
-    console.error("WebSocket not initialized");
-    return;
-  }
-
-  const payloads = instruments.map((item) => ({
-    correlationID: "correlation_id",
-    action: 1,
-    mode: 2,
-    exchangeType: item.exchangeType,
-    tokens: [item.token],
-  }));
-
-  console.log(`📡 Subscribed to ${instruments.length} instruments`);
-  payloads.forEach((p) => ws.fetchData(p));
-}
 
 module.exports = { smartApi, smartApiLogin, connectFeed, tickMap };
