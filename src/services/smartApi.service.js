@@ -70,35 +70,15 @@ const connectFeed = async (session) => {
 // -------- Socket.IO Connection (Global Scope) --------
 io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
-  socket.emit("tick", Array.from(tickMap.values()));
-
-  // Handle watchlist update
-  // socket.on("watchlist:update", async () => {
-  //   try {
-  //     console.log("Watchlist updated → Resubscribing instruments...");
-  //     subscribeInstrument = await SubscribeModel.find();
-  //     subscribeToInstruments(ws, subscribeInstrument);
-  //     io.emit("tick", Array.from(tickMap.values())); // broadcast updated state
-  //   } catch (err) {
-  //     console.error("Error in watchlist update:", err);
-  //   }
-  // });
-
-  socket.on("instrument:view", async ({ token, exchangeType }) => {
-    console.log(token)
-    console.log(exchangeType)
-    try {
-      await client.sAdd(
-        "subscribe_temp",
-        JSON.stringify({ token, exchangeType: exchangeMapping(exchangeType) })
-      );
-      const raw = await client.sMembers("subscribe_temp");
-      const instruments = raw.map(JSON.parse);
-      subscribeToInstruments(ws, instruments);
-      io.emit("tick", Array.from(tickMap.values())); // broadcast updated state
-    } catch (error) {
-      console.log("Socket instrument:view error", error);
-    }
+  socket.on("subscribe", ({ token, exchangeType }) => {
+    const payload = {
+      correlationID: "correlation_id",
+      action: 1,
+      mode: 2,
+      exchangeType: exchangeMapping(exchangeType),
+      tokens: [token],
+    };
+    ws.fetchData(payload);
   });
 
   socket.on("disconnect", () => {
