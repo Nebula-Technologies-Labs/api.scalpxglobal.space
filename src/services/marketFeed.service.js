@@ -19,7 +19,7 @@ const fetchSmartAPIInstrumentsData = async () => {
 };
 
 const saveNewInstrumentsInDatabase = async (data) => {
-  const instrumentTypes = ["OPTSTK", "OPTIDX", "OPTFUT", "FUTCOM"];
+  const instrumentTypes = ["OPTSTK", "OPTIDX", "OPTFUT", "FUTCOM", "FUTSTK","FUTIDX"];
   try {
     console.log("Saving Instruments in Database!!!");
     console.log(`${data.length} rows to be added in Database`);

@@ -20,9 +20,9 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["INTRADAY", "OVERNIGHT"],
     },
-    stopLossEnabled: { required: true, type: Boolean, default: false },
+    stopLossEnabled: { required: true, type: Boolean },
     stopLossPrice: { type: Number },
-    stockPrice: { required: true, type: Number },
+    stockLTP: { required: true, type: Number },
     orderMargin: { required: true, type: Number },
     totalAmount: { required: true, type: Number },
     brokerage: { required: true, type: Number },
@@ -36,6 +36,7 @@ orderSchema.virtual("instrument", {
   foreignField: "token",
   ref: "instrument",
   localField: "instrumentId",
+  justOne: true,
 });
 
 orderSchema.set("toJSON", { virtuals: true });
