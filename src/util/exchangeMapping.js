@@ -1,5 +1,5 @@
 const exchangeMapping = (exchange) => {
-  switch (exchange.toUpperCase()) {
+  switch (exchange?.toUpperCase()) {
     case "NSE":
       return 1;
     case "NFO":
