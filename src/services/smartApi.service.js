@@ -47,17 +47,13 @@ const connectFeed = async (session) => {
     });
 
     await ws.connect();
-    console.log("✅ SmartAPI WebSocket Connected");
-
-    // Subscribe to initial instruments
-    subscribeInstrument = await SubscribeModel.find();
-    subscribeToInstruments(ws, subscribeInstrument);
-
-    // WebSocket Tick Listener
     ws.on("tick", (data) => {
       if (data === "pong") return;
-      tickMap.set(data.token, data);
-      io.emit("tick", Array.from(tickMap.values()));
+      const token = String(data.token).replace(/"/g, "").trim();
+      tickMap.set(token, { ...data, token });
+      console.log(data);
+      const tickObject = Object.fromEntries(tickMap);
+      io.emit("tick", tickObject);
     });
 
     ws.on("error", (err) => console.error("WebSocket Error:", err));
@@ -71,16 +67,19 @@ const connectFeed = async (session) => {
 io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
   socket.on("subscribe", ({ token, exchangeType }) => {
-    const payload = {
-      correlationID: "correlation_id",
-      action: 1,
-      mode: 2,
-      exchangeType: exchangeMapping(exchangeType),
-      tokens: [token],
-    };
-    ws.fetchData(payload);
+    try {
+      const payload = {
+        correlationID: "correlation_id",
+        action: 1,
+        mode: 2,
+        exchangeType: exchangeMapping(exchangeType),
+        tokens: [token],
+      };
+      ws.fetchData(payload);
+    } catch (error) {
+      console.log(error);
+    }
   });
-
   socket.on("disconnect", () => {
     console.log("🔴 Client disconnected:", socket.id);
   });
