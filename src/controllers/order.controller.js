@@ -1,12 +1,12 @@
 const expressAsyncHandler = require("express-async-handler");
 const orderModel = require("../models/order.model");
+const instrumentModel = require("../models/instruments.model");
 const clientModel = require("../models/client.model");
 
 const fetchClientOrders = expressAsyncHandler(async (req, res) => {
   try {
     const orders = await orderModel
       .find({ userId: req.user })
-      .populate("instrument");
     return res.status(200).json({ orders });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server Error" });
@@ -29,12 +29,15 @@ const createNewOrder = expressAsyncHandler(async (req, res) => {
       tradeOption,
     } = req.body;
     const client = await clientModel.findById(req.user);
+    const instrument = await instrumentModel.findOne({ token });
     if (!client) return res.status(404).json({ message: "User not found" });
+    if (!instrument)
+      return res.status(404).json({ message: "Instrument not found" });
 
     if (client.availableFunds < Number(totalAmount))
       return res.status(401).json({ message: "Insufficent Funds" });
     const order = await orderModel.create({
-      instrumentId: token,
+      token,
       brokerage,
       orderType,
       orderOption,
@@ -47,6 +50,12 @@ const createNewOrder = expressAsyncHandler(async (req, res) => {
       userId: client._id,
       quantity,
       tradeOption,
+      symbol: instrument.symbol,
+      name: instrument.name,
+      exchangeType: instrument.exch_seg,
+      instrumenttype: instrument.instrumenttype,
+      expiryDate: instrument.expiry,
+      lotsize: instrument.lotsize,
     });
     if (order) {
       client.orderId.push(order._id);
@@ -72,4 +81,8 @@ const fetchOrderById = expressAsyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { fetchClientOrders, fetchOrderById, createNewOrder };
+module.exports = {
+  fetchClientOrders,
+  createNewOrder,
+  fetchOrderById,
+};

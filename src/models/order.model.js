@@ -7,7 +7,7 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "client",
     },
-    instrumentId: { required: true, type: String },
+    token: { required: true, type: String },
     orderType: { required: true, type: String, enum: ["BUY", "SELL"] },
     orderOption: { requried: true, type: String, enum: ["MARKET", "LIMIT"] },
     orderStatus: {
@@ -28,19 +28,15 @@ const orderSchema = new mongoose.Schema(
     brokerage: { required: true, type: Number },
     limitPrice: { type: Number },
     quantity: { required: true, type: Number },
+    symbol : {required : true, type: String},
+    name : {required : true , type : String},
+    exchangeType : {required : true , type : String},
+    instrumenttype : {required : true , type : String},
+    expiryDate : {required: true , type : String},
+    lotsize : {required : true , type : String},
   },
   { timestamps: true }
 );
-
-orderSchema.virtual("instrument", {
-  foreignField: "token",
-  ref: "instrument",
-  localField: "instrumentId",
-  justOne: true,
-});
-
-orderSchema.set("toJSON", { virtuals: true });
-orderSchema.set("toObject", { virtuals: true });
 
 const orderModel = mongoose.model("order", orderSchema);
 module.exports = orderModel;

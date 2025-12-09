@@ -1,9 +1,7 @@
 const brokerModel = require("../models/broker.model");
 const AdminModel = require("../models/admin.model");
 const clientModel = require("../models/client.model");
-const subscribeModel = require("../models/subscribe.model");
-const instrumentModel = require("../models/instruments.model");
-const exchangeMapping = require("../util/exchangeMapping");
+const OrderModal = require("../models/order.model")
 const expressAsyncHandler = require("express-async-handler");
 
 const registerClientByAdmin = expressAsyncHandler(async (req, res) => {
@@ -80,63 +78,10 @@ const fetchAllBrokers = expressAsyncHandler(async (req, res) => {
   }
 });
 
-const subscribeInstrument = expressAsyncHandler(async (req, res) => {
+const fetchAllOrders = expressAsyncHandler(async (req,res) => {
   try {
-    const { instrumentId } = req.params;
-    if (!instrumentId)
-      return res.status(403).json({ message: "Invalid request" });
-    const admin = await AdminModel.findById(req.user);
-    if (!admin) return res.status(403).json({ message: "UnAuthorized Access" });
-    const instrument = await instrumentModel.findById(instrumentId);
-    if (!instrument) return res.status(403).json("Invalid Instrument");
-
-    const isSubscribedInstrument = await subscribeModel.findById(
-      instrument._id
-    );
-    if (isSubscribedInstrument)
-      return res.status(403).json("Instrument Already Subscribed");
-
-    const subscription = await subscribeModel.create({
-      token: instrument.token,
-      exchangeType: exchangeMapping(instrument.exch_seg),
-    });
-    return res.status(200).json({ subscription });
-  } catch (error) {
-    return res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-const unSubscribeInstrument = expressAsyncHandler(async (req, res) => {
-  try {
-    const { instrumentId } = req.params;
-    if (!instrumentId)
-      return res.status(403).json({ message: " Missing Params" });
-    const admin = await AdminModel.findById(req.user);
-    if (!admin) return res.status(403).json({ message: "UnAuthorized Access" });
-    const instrument = await instrumentModel.findById(instrumentId);
-    if (!instrument)
-      return res.status(403).json({ message: "Invalid Instrument" });
-    const isSubscribedInstrument = await subscribeModel.findById(
-      instrument._id
-    );
-    if (!isSubscribedInstrument)
-      return res.status(403).json({ message: "Instrument not subscribed" });
-
-    await subscribeModel.findByIdAndDelete(instrument._id);
-    return res
-      .status(200)
-      .json({ message: "Instrument Successfully Unsubscribe" });
-  } catch (error) {
-    return res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
-const fetchSubscribedInstruments = expressAsyncHandler(async (req, res) => {
-  try {
-    const admin = await AdminModel.findById(req.user);
-    if (!admin) return res.status(403).json({ message: "UnAuthorized Access" });
-    const subscribeInstruments = await subscribeModel.find();
-    return res.status(200).json({ subscribeInstruments });
+    const orders = await OrderModal.find().populate("instrument").populate("userId" , "userName userId ");
+    return res.status(200).json({ orders });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server Error" });
   }
@@ -177,12 +122,7 @@ module.exports = {
   registerClientByAdmin,
   fetchAllClients,
   fetchAllBrokers,
-  subscribeInstrument,
-  unSubscribeInstrument,
-  fetchSubscribedInstruments,
-  fetchSubscribedInstruments,
-  subscribeInstrument,
-  unSubscribeInstrument,
   deleteClient,
   deletebroker,
+  fetchAllOrders
 };
