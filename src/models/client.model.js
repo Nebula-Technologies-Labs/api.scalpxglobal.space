@@ -10,8 +10,10 @@ const clientSchema = new mongoose.Schema(
     isDemoId: { type: Boolean, default: false },
     portfolioValue: { type: Number },
     futMargin: { type: Number, required: true },
-    optbrokerage: { type: Number, required: true, default: 20 },
+    optMargin: { type: Number, required: true },
+    optBrokerage: { type: Number, required: true, default: 20 },
     futBrokerage: { type: Number, required: true, default: 500 },
+    isAccountBlocked: { type: Boolean, required: true, default: false },
     brokerId: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "brokerModelType",

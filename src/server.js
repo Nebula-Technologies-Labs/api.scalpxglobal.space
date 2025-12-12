@@ -6,7 +6,6 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const logger = require("./util/logger");
 const { inject, errorHandler } = require("express-custom-error");
-const routes = require("./routes/router");
 const { initSocket } = require("./services/socket.service");
 const { connectDatabase } = require("./util/database");
 const cron = require("node-cron");
@@ -22,11 +21,13 @@ connectRedis();
 const app = express();
 const server = http.createServer(app);
 
+// Connecting Scalax Database which is running on localhost:PORT/scalax
+connectDatabase();
+
 // Initializing IO websocket
 initSocket(server);
 
-// Connecting Scalax Database which is running on localhost:PORT/scalax
-connectDatabase();
+
 
 // SmartApiSession is a global state which contains tokens fetched by generating session of SmartAPI which include : {jwtToken : "" , refreshToken : "" , feedToekn : ""}
 // This SmartAPISession is use to get authenticate APIs feed
@@ -58,6 +59,7 @@ inject();
 // creating logger middleware
 app.use(logger.dev, logger.combined);
 
+const routes = require("./routes/router");
 // Defining routes
 app.use("/api/v1", routes);
 

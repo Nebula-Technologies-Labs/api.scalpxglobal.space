@@ -1,12 +1,13 @@
 const brokerModel = require("../models/broker.model");
 const AdminModel = require("../models/admin.model");
 const clientModel = require("../models/client.model");
-const OrderModal = require("../models/order.model")
+const OrderModal = require("../models/order.model");
 const expressAsyncHandler = require("express-async-handler");
 
 const registerClientByAdmin = expressAsyncHandler(async (req, res) => {
   try {
-    const { userName, password, userId, isDemoId, availableFunds, futMargin } = req.body;
+    const { userName, password, userId, isDemoId, availableFunds, futMargin } =
+      req.body;
     const isAdmin = await AdminModel.findOne({ _id: req.user });
 
     if (!isAdmin)
@@ -66,21 +67,37 @@ const fetchAllClients = expressAsyncHandler(async (req, res) => {
   }
 });
 
+const fetchClientById = expressAsyncHandler(async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const isAdmin = await AdminModel.findOne({ _id: req.user });
+    if (!isAdmin)
+      return res.status(401).json({ message: "UnAuthorized Request" });
+    const client = await clientModel.findById(clientId).populate("orderId");
+    return res.status(200).json({ client });
+  } catch (error) {
+    return res.status(401).json({ message: "Bad Request" });
+  }
+});
+
 const fetchAllBrokers = expressAsyncHandler(async (req, res) => {
   try {
     const isAdmin = await AdminModel.findOne({ _id: req.user });
     if (!isAdmin)
       return res.status(401).json({ message: "UnAuthorized Access" });
     const brokers = await brokerModel.find().select("-password");
-    return res.status(200).json(brokers);
+    return res.status(200).json({ brokers });
   } catch (error) {
     return res.status(401).json({ message: "Bad request" });
   }
 });
 
-const fetchAllOrders = expressAsyncHandler(async (req,res) => {
+const fetchAllOrders = expressAsyncHandler(async (req, res) => {
   try {
-    const orders = await OrderModal.find().populate("instrument").populate("userId" , "userName userId ");
+    const orders = await OrderModal.find().populate(
+      "userId",
+      "userName userId "
+    );
     return res.status(200).json({ orders });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server Error" });
@@ -117,6 +134,34 @@ const deletebroker = expressAsyncHandler(async (req, res) => {
   }
 });
 
+const blockClientAccount = expressAsyncHandler(async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const admin = await AdminModel.findById(req.user);
+    if (!admin) return res.status(401).json({ message: "unAuthorized Access" });
+    await clientModel.findByIdAndUpdate(clientId, {
+      $set: { isAccountBlocked: true },
+    });
+    return res.status(200).json({ message: "Client Block Successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+const unblockClientAccount = expressAsyncHandler(async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const admin = await AdminModel.findById(req.user);
+    if (!admin) return res.status(401).json({ message: "unAuthorized Access" });
+    await clientModel.findByIdAndUpdate(clientId, {
+      $set: { isAccountBlocked: false },
+    });
+    return res.status(200).json({ message: "Client Block Successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 module.exports = {
   registerBrokerByAdmin,
   registerClientByAdmin,
@@ -124,5 +169,8 @@ module.exports = {
   fetchAllBrokers,
   deleteClient,
   deletebroker,
-  fetchAllOrders
+  fetchAllOrders,
+  fetchClientById,
+  blockClientAccount,
+  unblockClientAccount,
 };

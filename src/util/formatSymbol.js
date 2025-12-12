@@ -6,7 +6,7 @@ function formatSymbol(raw) {
 
   const [, name, _day, mon, _year, strike, type] = match;
 
-  return [name, mon, strike || "", type || ""].filter(Boolean).join(" ");
+  return [name, _day, mon, strike, type].filter(Boolean).join(" ");
 }
 
 function formatInstrumentArray(arr) {

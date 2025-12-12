@@ -30,7 +30,7 @@
         "jsonwebtoken": "^9.0.2",
         "mandatoryenv": "^1.1.1",
         "module-alias": "^2.2.2",
-        "mongodb": "^3.3.3",
+        "mongodb": "^3.7.4",
         "mongoose": "^8.19.1",
         "morgan": "^1.9.1",
         "node-cron": "^4.2.1",
