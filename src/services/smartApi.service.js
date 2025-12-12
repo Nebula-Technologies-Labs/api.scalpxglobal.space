@@ -2,6 +2,7 @@ const { SmartAPI, WebSocketV2 } = require("smartapi-javascript");
 const { generateTotp } = require("../util/generateTotp");
 const { Io } = require("./socket.service");
 const exchangeMapping = require("../util/exchangeMapping");
+const { redis } = require("./redis.service");
 
 const smartApi = new SmartAPI({
   api_key: process.env.SMART_API_KEY,
@@ -10,9 +11,7 @@ const smartApi = new SmartAPI({
 const io = Io();
 let ws;
 const tickMap = new Map();
-const tokenMap = new Map();
-tokenMap.set(99926000, { token: "99926000", exchangeType: "NSE" });
-tokenMap.set(99926009, { token: "99926009", exchangeType: "NSE" });
+let tokenMap = new Map();
 
 const smartApiLogin = async () => {
   try {
@@ -46,6 +45,10 @@ const connectFeed = async (session) => {
       feedtype: session.feedToken,
     });
 
+    tokenMap = await loadTokenMap();
+    tokenMap.set("99926000", { token: "99926000", exchangeType: "NSE" });
+    tokenMap.set("99926009", { token: "99926009", exchangeType: "NSE" });
+
     await ws.connect();
     subscribeInstrument(tokenMap);
     ws.on("tick", (data) => {
@@ -68,10 +71,10 @@ const connectFeed = async (session) => {
 // -------- Socket.IO Connection (Global Scope) --------
 io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
-  socket.on("subscribe", ({ token, exchangeType }) => {;
+
+  socket.on("subscribe", ({ token, exchangeType }) => {
     if (!tokenMap.has(token)) {
       try {
-        tokenMap.set(token, { token, exchangeType });
         const payload = {
           correlationID: "correlation_id",
           action: 1,
@@ -80,8 +83,10 @@ io.on("connection", (socket) => {
           tokens: [token],
         };
         ws.fetchData(payload);
+        tokenMap.set(token, { token, exchangeType });
+        saveToken(token, exchangeType);
       } catch (error) {
-        console.error("Exchange Mapping Error");
+        console.error(error);
       }
     }
   });
@@ -104,4 +109,23 @@ const subscribeInstrument = (tokenMap) => {
   });
 };
 
-module.exports = { smartApi, smartApiLogin, connectFeed, tickMap, tokenMap };
+const saveToken = async (token, exchangeType) => {
+  return await redis.HSET(`tokenMap:${token}`, {
+    token,
+    exchangeType,
+  });
+};
+
+const loadTokenMap = async () => {
+  const keys = await redis.keys("tokenMap:*");
+  const map = new Map();
+
+  for (const key of keys) {
+    const data = await redis.HGETALL(key);
+    map.set(data.token, data);
+  }
+
+  return map;
+};
+
+module.exports = { smartApi, smartApiLogin, connectFeed, tickMap };

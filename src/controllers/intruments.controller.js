@@ -1,22 +1,15 @@
 const expressAsyncHandler = require("express-async-handler");
 const instrumentModel = require("../models/instruments.model");
-const { client } = require("../services/redis.service");
+const { redis } = require("../services/redis.service");
 
 const fetchAllInstruments = expressAsyncHandler(async (req, res) => {
   const instrumentTypes = ["OPTSTK", "OPTIDX", "OPTFUT", "FUTCOM"];
   try {
-    const data = await client.get("instruments");
+    const data = await redis.get("instruments");
     if (data) {
       return res.status(200).json({ instruments: JSON.parse(data) });
     }
-    const instruments = await instrumentModel
-      .find({
-        instrumenttype: { $in: instrumentTypes },
-      })
-      .select("symbol token exch_seg");
-    return res.status(200).json({ instruments });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -40,7 +33,7 @@ const fetchInstrumentById = expressAsyncHandler(async (req, res) => {
   try {
     const { tokenId } = req.params;
     if (!tokenId) return res.status(403).json({ message: "Bad Request" });
-    const data = await client.get(`instruments`);
+    const data = await redis.get(`instruments`);
     const instrument = JSON.parse(data).find((item) => item.token === tokenId);
     if (!instrument) {
       return res.status(404).json({ message: "Instrument Not Found" });
