@@ -10,6 +10,9 @@ const smartApi = new SmartAPI({
 const io = Io();
 let ws;
 const tickMap = new Map();
+const tokenMap = new Map();
+tokenMap.set(99926000, { token: "99926000", exchangeType: "NSE" });
+tokenMap.set(99926009, { token: "99926009", exchangeType: "NSE" });
 
 const smartApiLogin = async () => {
   try {
@@ -44,13 +47,16 @@ const connectFeed = async (session) => {
     });
 
     await ws.connect();
+    subscribeInstrument(tokenMap);
     ws.on("tick", (data) => {
       if (data === "pong") return;
       const token = String(data.token).replace(/"/g, "").trim();
       tickMap.set(token, { ...data, token });
-      const tickObject = Object.fromEntries(tickMap);
-      io.emit("tick", tickObject);
     });
+
+    setInterval(() => {
+      io.emit("tick", Object.fromEntries(tickMap));
+    }, [100]);
 
     ws.on("error", (err) => console.error("WebSocket Error:", err));
     ws.on("close", () => console.log("⚠️ WebSocket closed — reconnecting..."));
@@ -62,18 +68,21 @@ const connectFeed = async (session) => {
 // -------- Socket.IO Connection (Global Scope) --------
 io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
-  socket.on("subscribe", ({ token, exchangeType }) => {
-    try {
-      const payload = {
-        correlationID: "correlation_id",
-        action: 1,
-        mode: 2,
-        exchangeType: exchangeMapping(exchangeType),
-        tokens: [token],
-      };
-      ws.fetchData(payload);
-    } catch (error) {
-      console.error("Exchange Mapping Error")
+  socket.on("subscribe", ({ token, exchangeType }) => {;
+    if (!tokenMap.has(token)) {
+      try {
+        tokenMap.set(token, { token, exchangeType });
+        const payload = {
+          correlationID: "correlation_id",
+          action: 1,
+          mode: 2,
+          exchangeType: exchangeMapping(exchangeType),
+          tokens: [token],
+        };
+        ws.fetchData(payload);
+      } catch (error) {
+        console.error("Exchange Mapping Error");
+      }
     }
   });
   socket.on("disconnect", () => {
@@ -81,4 +90,18 @@ io.on("connection", (socket) => {
   });
 });
 
-module.exports = { smartApi, smartApiLogin, connectFeed, tickMap };
+const subscribeInstrument = (tokenMap) => {
+  const tokenArray = Array.from(tokenMap.values());
+  tokenArray.forEach((item) => {
+    const payload = {
+      correlationID: "correlation_id",
+      action: 1,
+      mode: 2,
+      exchangeType: exchangeMapping(item.exchangeType),
+      tokens: [item.token],
+    };
+    ws.fetchData(payload);
+  });
+};
+
+module.exports = { smartApi, smartApiLogin, connectFeed, tickMap, tokenMap };
