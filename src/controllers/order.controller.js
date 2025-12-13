@@ -4,6 +4,7 @@ const instrumentModel = require("../models/instruments.model");
 const clientModel = require("../models/client.model");
 const { tickMap } = require("../services/smartApi.service");
 const calculateTotalPrice = require("../util/CalculateTotalAmount");
+const validateOrderRequestPayload = require("../services/validate.service");
 
 const fetchClientOrders = expressAsyncHandler(async (req, res) => {
   try {
@@ -16,48 +17,46 @@ const fetchClientOrders = expressAsyncHandler(async (req, res) => {
 
 const createNewOrder = expressAsyncHandler(async (req, res) => {
   try {
-    const {
-      token,
-      quantity,
-      orderType,
-      orderOption,
-      tradeOption,
-      lotQuantity,
-    } = req.body;
+    const body = req.body;
     const client = await clientModel.findById(req.user);
-    const instrument = await instrumentModel.findOne({ token });
+    const instrument = await instrumentModel.findOne({ token : body.token });
     if (!client)
       return res.status(401).json({ message: "UnAuthorized Access" });
 
     if (!instrument) return res.status(403).json({ message: "Bad Request" });
-    const data = tickMap.get(token);
+    const data = tickMap.get(body.token);
     const average = data.last_traded_price;
     if (!average) return res.status(403).json({ message: "Bad Request" });
+    const payload = validateOrderRequestPayload(body, average);
+
     const { totalAmount, margin, brokerage } = calculateTotalPrice(
       instrument.instrumenttype,
       Number(average),
       client.futMargin,
       client.optMargin,
-      quantity,
-      lotQuantity
+      payload.quantity,
+      payload.lotQuantity
     );
 
     const order = await orderModel.create({
-      token,
-      average,
-      brokerage,
+      token: payload.token,
+      average: average,
+      brokerage: brokerage,
       exchangeType: instrument.exch_seg,
       expiryDate: instrument.expiry,
       instrumenttype: instrument.instrumenttype,
       name: instrument.name,
-      orderOption: orderOption,
-      orderStatus: 1,
-      orderType: orderType,
-      quantity: quantity,
+      orderOption: payload.orderOption,
+      orderStatus: payload.orderStatus,
+      orderType: payload.orderType,
+      quantity: payload.quantity,
       symbol: instrument.symbol,
       totalAmount: totalAmount,
       userId: client._id,
-      tradeOption: tradeOption,
+      tradeOption: payload.tradeOption,
+      limit: payload.limit,
+      stoplossOption: payload.stopLossOption,
+      triggerPrice: payload.triggerPrice,
       margin: margin,
     });
 

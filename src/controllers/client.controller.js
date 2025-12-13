@@ -3,6 +3,7 @@ const watchlistModel = require("../models/watchlist.model");
 const clientModel = require("../models/client.model");
 const instrumentModel = require("../models/instruments.model");
 const orderModel = require("../models/order.model");
+const { default: mongoose } = require("mongoose");
 
 const getClientProfile = expressAsyncHandler(async (req, res) => {
   try {
@@ -156,6 +157,92 @@ const createNewOrder = expressAsyncHandler(async (req, res) => {
   }
 });
 
+const fetchClientPosition = async (req, res) => {
+  try {
+    const positions = await orderModel.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(req.user),
+          orderStatus: 1, // EXECUTED
+        },
+      },
+      {
+        $group: {
+          _id: "$token",
+
+          // Net quantity (BUY +, SELL -)
+          quantity: {
+            $sum: {
+              $cond: [
+                { $eq: ["$orderType", 0] }, // BUY
+                "$quantity",
+                { $multiply: ["$quantity", -1] }, // SELL
+              ],
+            },
+          },
+
+          // Net traded value
+          netValue: {
+            $sum: {
+              $cond: [
+                { $eq: ["$orderType", 0] },
+                { $multiply: ["$average", "$quantity"] },
+                {
+                  $multiply: [
+                    { $multiply: ["$average", "$quantity"] },
+                    -1,
+                  ],
+                },
+              ],
+            },
+          },
+
+          name: { $first: "$name" },
+          symbol: { $first: "$symbol" },
+          exchangeType: { $first: "$exchangeType" },
+          instrumenttype: { $first: "$instrumenttype" },
+          expiryDate: { $first: "$expiryDate" },
+          tradeOption: { $first: "$tradeOption" },
+          token : {$first : "$token"}
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          _id: "$_id",
+          quantity: 1,
+          average: {
+            $cond: [
+              { $eq: ["$quantity", 0] },
+              0,
+              { $divide: ["$netValue", "$quantity"] },
+            ],
+          },
+          name: 1,
+          symbol: 1,
+          exchangeType: 1,
+          instrumenttype: 1,
+          expiryDate: 1,
+          tradeOption : 1,
+          token : 1
+        },
+      },
+      {
+        // remove closed positions
+        $match: {
+          quantity: { $ne: 0 },
+        },
+      },
+    ]);
+    return res.status(200).json({ positions });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "internal server error" });
+  }
+};
+
+
+
 module.exports = {
   getClientProfile,
   createClientWatchlist,
@@ -164,5 +251,6 @@ module.exports = {
   updateClientWatchlistById,
   fetchClientWatchlist,
   fetchClientsWatchlistById,
-  createNewOrder
+  createNewOrder,
+  fetchClientPosition,
 };

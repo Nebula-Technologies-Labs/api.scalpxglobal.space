@@ -8,7 +8,8 @@ const {
   fetchAllOrders,
   fetchClientById,
   blockClientAccount,
-  unblockClientAccount
+  unblockClientAccount,
+  addFundsToClientAccount
 } = require("../controllers/admin.controller");
 const authenticate = require("../middleware/auth.middleware");
 const router = require("express").Router();
@@ -23,5 +24,6 @@ router.delete("/admin/delete/client/:clientId", authenticate, deleteClient);
 router.delete("/admin/delete/broker/:brokerId", authenticate, deletebroker);
 router.put("/admin/client/block/:clientId", authenticate, blockClientAccount);
 router.put("/admin/client/unblock/:clientId", authenticate, unblockClientAccount);
+router.put("/admin/client/funds/add/:clientId" , authenticate , addFundsToClientAccount)
 
 module.exports = router;

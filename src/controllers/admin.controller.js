@@ -6,8 +6,15 @@ const expressAsyncHandler = require("express-async-handler");
 
 const registerClientByAdmin = expressAsyncHandler(async (req, res) => {
   try {
-    const { userName, password, userId, isDemoId, availableFunds, futMargin, optMargin } =
-      req.body;
+    const {
+      userName,
+      password,
+      userId,
+      isDemoId,
+      availableFunds,
+      futMargin,
+      optMargin,
+    } = req.body;
     const isAdmin = await AdminModel.findOne({ _id: req.user });
 
     if (!isAdmin)
@@ -163,6 +170,41 @@ const unblockClientAccount = expressAsyncHandler(async (req, res) => {
   }
 });
 
+const addFundsToClientAccount = expressAsyncHandler(async (req, res) => {
+  try {
+    const { funds } = req.body;
+    const { clientId } = req.params;
+
+    if (!Number.isFinite(funds) || funds <= 0) {
+      return res.status(400).json({ message: "Invalid fund amount" });
+    }
+
+    const admin = await AdminModel.findById(req.user);
+    if (!admin) {
+      return res.status(401).json({ message: "Unauthorized access" });
+    }
+
+    const client = await clientModel.findByIdAndUpdate(
+      clientId,
+      {
+        $inc: { availableFunds: funds },
+      },
+      { new: true }
+    );
+
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    return res.status(200).json({
+      message: "Funds added successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 module.exports = {
   registerBrokerByAdmin,
   registerClientByAdmin,
@@ -174,4 +216,5 @@ module.exports = {
   fetchClientById,
   blockClientAccount,
   unblockClientAccount,
+  addFundsToClientAccount,
 };

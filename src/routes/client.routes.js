@@ -7,6 +7,7 @@ const {
   updateClientWatchlistById,
   getClientProfile,
   createNewOrder,
+  fetchClientPosition
 } = require("../controllers/client.controller");
 const Authenticate = require("../middleware/auth.middleware");
 
@@ -34,6 +35,5 @@ router.delete(
 // -------------------- Client Orders Routes ------------------------------------
 
 router.post("/client/order", Authenticate, createNewOrder);
-router.get("/client/orders", Authenticate);
-router.get("client/order/:orderId", Authenticate);
+router.get("/client/position" , Authenticate, fetchClientPosition)
 module.exports = router;
