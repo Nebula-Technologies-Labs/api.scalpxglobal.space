@@ -6,7 +6,7 @@ const expressAsyncHandler = require("express-async-handler");
 
 const registerClientByAdmin = expressAsyncHandler(async (req, res) => {
   try {
-    const { userName, password, userId, isDemoId, availableFunds, futMargin } =
+    const { userName, password, userId, isDemoId, availableFunds, futMargin, optMargin } =
       req.body;
     const isAdmin = await AdminModel.findOne({ _id: req.user });
 
@@ -19,6 +19,7 @@ const registerClientByAdmin = expressAsyncHandler(async (req, res) => {
       password,
       availableFunds,
       futMargin,
+      optMargin,
       brokerId: isAdmin._id,
       brokerModelType: "admin",
       isDemoId,

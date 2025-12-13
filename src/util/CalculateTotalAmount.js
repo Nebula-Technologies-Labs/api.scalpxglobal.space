@@ -11,7 +11,7 @@ function calculateTotalPrice(
   let brokerage;
 
   if (optionTypes.includes(instrumentType)) {
-    margin = (average / optionmargin) * quantity;
+    margin = (average / optionmargin) * quantity / 100;
     brokerage = 20;
   } else {
     margin = futmargin * lotquantity;
