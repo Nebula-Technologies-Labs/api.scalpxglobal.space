@@ -25,13 +25,13 @@ const createNewOrder = expressAsyncHandler(async (req, res) => {
 
     if (!instrument) return res.status(403).json({ message: "Bad Request" });
     const data = tickMap.get(body.token);
-    const average = data.last_traded_price;
+    const average = Number(data.last_traded_price) / 100;
     if (!average) return res.status(403).json({ message: "Bad Request" });
     const payload = validateOrderRequestPayload(body, average);
 
     const { totalAmount, margin, brokerage } = calculateTotalPrice(
       instrument.instrumenttype,
-      Number(average),
+      average,
       client.futMargin,
       client.optMargin,
       payload.quantity,
