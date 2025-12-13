@@ -27,8 +27,6 @@ connectDatabase();
 // Initializing IO websocket
 initSocket(server);
 
-
-
 // SmartApiSession is a global state which contains tokens fetched by generating session of SmartAPI which include : {jwtToken : "" , refreshToken : "" , feedToekn : ""}
 // This SmartAPISession is use to get authenticate APIs feed
 let SmartApiSession = {

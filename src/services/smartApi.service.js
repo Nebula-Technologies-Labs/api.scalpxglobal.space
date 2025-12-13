@@ -56,7 +56,6 @@ const connectFeed = async (session) => {
       const token = String(data.token).replace(/"/g, "").trim();
       tickMap.set(token, { ...data, token });
     });
-
     setInterval(() => {
       io.emit("tick", Object.fromEntries(tickMap));
     }, [100]);
